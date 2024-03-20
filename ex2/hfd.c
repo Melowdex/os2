@@ -4,12 +4,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#define MAXBUFFER 100
 
 
 int main(){
 
     int pipefd[2];
-    char buf[50];
+    char buf[MAXBUFFER];
 
     if (pipe(pipefd) == -1) {
         perror("pipe");
@@ -21,11 +22,18 @@ int main(){
 
     if (process == 0){  //child code
 
+        int i = 0;
+        int rres;
         close(pipefd[1]);
-        FILE* f = fopen("log.txt", "a");
+        FILE* f = fopen("log.txt", "w");
         
-        while (read(pipefd[0], buf, 50) > 0)
-            fprintf(f, "%s", buf);
+        do {
+            rres = read(pipefd[0], buf, MAXBUFFER);
+            if (rres > 0){
+                fprintf(f, "%d) %s", i, buf);
+                ++i;
+            }
+        } while (rres > 0);
         
         fclose(f);
         close(pipefd[0]);
@@ -34,7 +42,10 @@ int main(){
     }else{              //parent code
 
         close(pipefd[0]);
-        write(pipefd[1], "Hello world! \n", strlen("Hello world!"));
+        for (int i = 0; i<5; i++){
+            write(pipefd[1], "Hello world!\n", strlen("Hello world!\n"));
+            sleep(1);
+        }
         close(pipefd[1]);
         wait(NULL);
         exit(EXIT_SUCCESS);
