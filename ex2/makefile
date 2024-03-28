@@ -2,14 +2,14 @@ TITLE_COLOR = \033[33m
 NO_COLOR = \033[0m
 
 # when executing make, compile all executables
-all: test_server client_node
+all: server client_node
 
-test_server : test_server.c lib/libtcpsock.so
+server : server.c lib/libtcpsock.so
 	@mkdir -p build
-	@echo "$(TITLE_COLOR)\n***** COMPILING test_server *****$(NO_COLOR)"
-	gcc -c test_server.c -Wall -Werror -o build/test_server.o -g
-	@echo "$(TITLE_COLOR)\n***** LINKING test_server *****$(NO_COLOR)"
-	gcc build/test_server.o -ltcpsock -o test_server -Wall -L./lib -Wl,-rpath=./lib
+	@echo "$(TITLE_COLOR)\n***** COMPILING server *****$(NO_COLOR)"
+	gcc -c server.c -Wall -Werror -o build/server.o -g
+	@echo "$(TITLE_COLOR)\n***** LINKING server *****$(NO_COLOR)"
+	gcc build/server.o splist.o -ltcpsock -o server -Wall -L./lib -Wl,-rpath=./lib
 
 client_node : client_node.c lib/libtcpsock.so
 	@mkdir -p build
@@ -32,18 +32,18 @@ lib/libtcpsock.so : lib/tcpsock.c
 .PHONY : clean clean-all run
 
 clean:
-	rm -rf build test_server client_node *~
+	rm -rf build server client_node *~
 
 clean-all: clean
 	rm -rf lib/*.so
 
-run : test_server client_node
+run : server client_node
 	@echo running the server
-	./test_server
+	./server
 
-debug-server: test_server
-	@echo "$(TITLE_COLOR)\n***** Running GDB on test_server *****$(NO_COLOR)"
-	gdb -q -ex run --args ./test_server
+debug-server: server
+	@echo "$(TITLE_COLOR)\n***** Running GDB on server *****$(NO_COLOR)"
+	gdb -q -ex run --args ./server
 
 debug-client: client_node
 	@echo "$(TITLE_COLOR)\n***** Running GDB on client_node *****$(NO_COLOR)"

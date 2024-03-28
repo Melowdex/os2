@@ -2,10 +2,12 @@
  * @author Xander Verberckt
  */
 #include <stdio.h>
+#include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include "splist.h"
 #include "config.h"
 #include "lib/tcpsock.h"
 
@@ -14,6 +16,7 @@
 
 void loggerCode();
 void serverCode();
+void childCode(tcpsock_t* server, tcpsock_t* client);
 
 static void SIGINT_handler(int sig);
 
@@ -44,6 +47,8 @@ void serverCode(){
     sa.sa_handler = SIGINT_handler;
     sigaction(SIGINT, &sa, NULL);
 
+    splist_t* lijst = spl_create();
+
     close(pipefd[0]);
 
     write(pipefd[1], "Logger started!\n", strlen("Logger started!\n"));
@@ -55,13 +60,73 @@ void serverCode(){
     printf("Server is started\n");
     write(pipefd[1], "Server started!\n", strlen("Server started!\n"));
 
-    while (running == 1){
+    int loop = 0;
+    while (running == 1 && loop < 10){
+        loop++;
 
+        if (tcp_wait_for_connection(server, &client) != TCP_NO_ERROR) exit(EXIT_FAILURE);
+        printf("Incoming client connection\n");
+        
+        int childProcess = fork();
+        
+        if (childProcess == 0)
+            childCode(server, client);
+        else{
+            splist_node_t* ref = spl_get_first_reference(lijst);
+            if (ref != NULL){
+                while(ref != NULL){
+                    int id = spl_get_element_at_reference(lijst, ref);
+                    getpgid(id) == -1 ? spl_remove_at_reference(lijst, ref) : 0;
+                    ref = spl_get_next_reference(lijst, ref);
+                }
+            }
+            spl_insert_at_reference(lijst, childProcess, NULL);
+            write(pipefd[1], sprintf("Process created, pid: %d\n", childProcess), strlen(sprintf("Process created, pid: %d\n", childProcess)));
+        }
     }
-
+    write(pipefd[1], "Closing down\n", strlen("Closing down\n"));
     close(pipefd[1]);
+    //kill all clients
+    if (spl_size(lijst) > 0){
+        splist_node_t* ref = spl_get_first_reference(lijst);
+        while (ref != NULL){
+            int id = spl_get_element_at_reference(lijst, ref);
+            kill(id, SIGKILL);
+            ref = spl_get_next_reference(lijst, ref);
+        }
+    }
     wait(NULL);
     exit(EXIT_SUCCESS);
+}
+
+void childCode(tcpsock_t* server, tcpsock_t* client){
+    int bytes, result;
+    char data[BUFFER_MAX];
+    int msgCount = 0;
+    do {
+        msgCount++;
+        bytes = BUFFER_MAX;
+        result = tcp_receive(client, (void *) &data, &bytes);
+        if ((result == TCP_NO_ERROR) && bytes) {
+            printf("Received : %s\n", data);
+            bytes = strlen(data);
+            bytes = bytes > BUFFER_MAX ? BUFFER_MAX : bytes;
+            write(pipefd[1], data, bytes);
+            write(pipefd[1], "\n", strlen("\n"));
+            result = tcp_send(client,(void *) &data, &bytes);
+        }
+    } while (result == TCP_NO_ERROR && msgCount < 10);
+    if (result == TCP_CONNECTION_CLOSED){
+        printf("Peer has closed connection\n");
+        write(pipefd[1], "Peer has closed connection\n", strlen("Peer has closed connection\n"));
+    } else{
+        printf("Error occured on connection to peer\n");
+        write(pipefd[1], "Error occured on connection to peer\n", strlen("Error occured on connection to peer\n"));
+    }
+    tcp_close(&client);
+
+    _exit(EXIT_SUCCESS);
+
 }
 
 void loggerCode(){
