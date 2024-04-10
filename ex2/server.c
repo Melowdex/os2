@@ -3,6 +3,7 @@
  */
 #include <stdio.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -13,6 +14,7 @@
 
 #define PORT 3000
 #define MAXBUFFER 100
+#define MAXTEXT 60
 
 void loggerCode();
 void serverCode();
@@ -75,13 +77,15 @@ void serverCode(){
             splist_node_t* ref = spl_get_first_reference(lijst);
             if (ref != NULL){
                 while(ref != NULL){
-                    int id = spl_get_element_at_reference(lijst, ref);
+                    int id = *(spl_get_element_at_reference(lijst, ref));
                     getpgid(id) == -1 ? spl_remove_at_reference(lijst, ref) : 0;
                     ref = spl_get_next_reference(lijst, ref);
                 }
             }
-            spl_insert_at_reference(lijst, childProcess, NULL);
-            write(pipefd[1], sprintf("Process created, pid: %d\n", childProcess), strlen(sprintf("Process created, pid: %d\n", childProcess)));
+            spl_insert_at_reference(lijst, &childProcess, NULL);
+            char text[MAXTEXT];
+            sprintf(text, "Process created, pid: %d\n", childProcess);
+            write(pipefd[1], text, strlen(text));
         }
     }
     write(pipefd[1], "Closing down\n", strlen("Closing down\n"));
@@ -90,11 +94,12 @@ void serverCode(){
     if (spl_size(lijst) > 0){
         splist_node_t* ref = spl_get_first_reference(lijst);
         while (ref != NULL){
-            int id = spl_get_element_at_reference(lijst, ref);
+            int id = *(spl_get_element_at_reference(lijst, ref));
             kill(id, SIGKILL);
             ref = spl_get_next_reference(lijst, ref);
         }
     }
+    spl_free(&lijst);
     wait(NULL);
     exit(EXIT_SUCCESS);
 }
