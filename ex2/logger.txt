@@ -1,0 +1,9 @@
+0) Logger started!
+Server started!
+1) Process created, pid: 23822
+ed!
+2) Always code as if the guy who ends up maintaining your code will be a violent psychopath who knows where you live.
+3) Process created, pid: 24020
+o ends up maintaining your code will be a violent psychopath who knows where you live.
+4) There are two ways to write error-free programs; only the third one works.
+nt psychopath who knows where you live.

@@ -13,11 +13,11 @@
 #include "lib/tcpsock.h"
 
 #define PORT 3000
-#define MAXBUFFER 100
+#define MAXBUFFER 150
 #define MAXTEXT 60
 
 void loggerCode();
-void serverCode();
+void serverCode(int processLogger);
 void childCode(tcpsock_t* server, tcpsock_t* client);
 
 static void SIGINT_handler(int sig);
@@ -38,12 +38,12 @@ int main(){
     if (processLogger == 0){
         loggerCode();
     } else{
-        serverCode();
+        serverCode(processLogger);
     }
     return 0;
 }
 
-void serverCode(){
+void serverCode(int processLogger){
 
     struct sigaction sa;
     sa.sa_handler = SIGINT_handler;
@@ -66,14 +66,16 @@ void serverCode(){
     while (running == 1 && loop < 10){
         loop++;
 
+        printf("Waiting for incoming client connection\n");
+
         if (tcp_wait_for_connection(server, &client) != TCP_NO_ERROR) exit(EXIT_FAILURE);
         printf("Incoming client connection\n");
         
         int childProcess = fork();
         
-        if (childProcess == 0)
+        if (childProcess == 0){
             childCode(server, client);
-        else{
+        } else{
             splist_node_t* ref = spl_get_first_reference(lijst);
             if (ref != NULL){
                 while(ref != NULL){
@@ -83,6 +85,8 @@ void serverCode(){
                 }
             }
             spl_insert_at_reference(lijst, &childProcess, NULL);
+            printf("Process created, pid: %d\n", childProcess);
+            printf("Number of clients: %d\n", spl_size(lijst));
             char text[MAXTEXT];
             sprintf(text, "Process created, pid: %d\n", childProcess);
             write(pipefd[1], text, strlen(text));
@@ -90,7 +94,8 @@ void serverCode(){
     }
     write(pipefd[1], "Closing down\n", strlen("Closing down\n"));
     close(pipefd[1]);
-    //kill all clients
+    //kill all clients + logger
+    kill(processLogger, SIGKILL);
     if (spl_size(lijst) > 0){
         splist_node_t* ref = spl_get_first_reference(lijst);
         while (ref != NULL){
@@ -110,7 +115,7 @@ void childCode(tcpsock_t* server, tcpsock_t* client){
     int msgCount = 0;
     do {
         msgCount++;
-        bytes = BUFFER_MAX;
+        bytes = BUFFER_MAX; 
         result = tcp_receive(client, (void *) &data, &bytes);
         if ((result == TCP_NO_ERROR) && bytes) {
             printf("Received : %s\n", data);
@@ -138,15 +143,18 @@ void loggerCode(){
     int i = 0;
     int rres;
     close(pipefd[1]);
-    FILE* f = fopen("log.txt", "w");
+    FILE* f = fopen("logger.txt", "w");
     
     do {
         rres = read(pipefd[0], buf, MAXBUFFER);
-        if (rres > 0){
+        if (rres > 0){  
+            printf("%d) %s", i, buf);
             fprintf(f, "%d) %s", i, buf);
+            fflush(f);
             ++i;
         }
-    } while (rres > 0);
+        sleep(1);
+    } while (1);
     
     fclose(f);
     close(pipefd[0]);
