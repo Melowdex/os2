@@ -61,14 +61,14 @@ void serverCode(int processLogger){
 
     close(pipefd[0]);
 
-    write(pipefd[1], "Logger started!\n", strlen("Logger started!\n"));
+    write(pipefd[1], "Logger started!\n", strlen("Logger started!\n")+1);
 
     tcpsock_t *server, *client;
 
     if (tcp_passive_open(&server, PORT) != TCP_NO_ERROR) exit(EXIT_FAILURE);
 
     printf("Server is started\n");
-    write(pipefd[1], "Server started!\n", strlen("Server started!\n"));
+    write(pipefd[1], "Server started!\n", strlen("Server started!\n")+1);
 
     int loop = 0;
     while (running == 1 && loop < 10){
@@ -97,12 +97,12 @@ void serverCode(int processLogger){
                 printf("Number of clients: %d\n", spl_size(lijst));
                 char text[MAXTEXT];
                 sprintf(text, "Process created, pid: %d\n", childProcess);
-                write(pipefd[1], text, strlen(text));
+                write(pipefd[1], text, strlen(text)+1);
             }
         }
     }
     printf("dag dag\n");
-    write(pipefd[1], "Closing down\n", strlen("Closing down\n"));
+    write(pipefd[1], "Closing down\n", strlen("Closing down\n")+1);
     //kill all clients + logger
     sleep(0.2);
     if (spl_size(lijst) > 0){
@@ -137,16 +137,16 @@ void childCode(tcpsock_t* server, tcpsock_t* client){
             bytes = strlen(data);
             bytes = bytes > BUFFER_MAX ? BUFFER_MAX : bytes;
             write(pipefd[1], data, bytes);
-            write(pipefd[1], "\n", strlen("\n"));
+            write(pipefd[1], "\n", strlen("\n")+1);
             result = tcp_send(client,(void *) &data, &bytes);
         }
     } while (result == TCP_NO_ERROR && msgCount < 10 && running == 1);
     if (result == TCP_CONNECTION_CLOSED){
         printf("Peer has closed connection\n");
-        write(pipefd[1], "Peer has closed connection\n", strlen("Peer has closed connection\n"));
+        write(pipefd[1], "Peer has closed connection\n", strlen("Peer has closed connection\n")+1);
     } else{
         printf("Error occured on connection to peer\n");
-        write(pipefd[1], "Error occured on connection to peer\n", strlen("Error occured on connection to peer\n"));
+        write(pipefd[1], "Error occured on connection to peer\n", strlen("Error occured on connection to peer\n")+1);
     }
     tcp_close(&client);
     _exit(EXIT_SUCCESS);

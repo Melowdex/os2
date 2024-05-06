@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     i = LOOPS;
     while (i) {
         index = rand() % 5;
-        bytes = strlen(quotes[index]);
+        bytes = strlen(quotes[index]) + 1;
         printf("Sending: %s\n",quotes[index]);
         if (tcp_send(client, (void *) &(quotes[index]), &bytes) != TCP_NO_ERROR) exit(EXIT_FAILURE);
         sleep(sleep_time);

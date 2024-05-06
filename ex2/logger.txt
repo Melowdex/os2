@@ -1,5 +1,6 @@
 0) Logger started!
-Server started!
-1) Process created, pid: 25603
-ed!
-2) Code is like humor. When you have to explain it, it’s bad.
+1) Process created, pid: 15336
+2) There are two ways to write error-free programs; only the third one works.
+3) There are two ways to write error-free programs; only the third one works.
+4) There are two ways to write error-free programs; only the third one works.
+5) Peer has closed connection
