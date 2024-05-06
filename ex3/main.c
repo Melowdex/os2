@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include "sbuffer.h"
+#include <ctype.h>
+#include <stdlib.h>
 #define MESSAGE_MAX 512
 
 struct thread_info {    /* Used as argument to thread_start() */
@@ -24,9 +26,10 @@ void freq_count(sbuffer_t **buffer) {   //freq_count is 0
                 if (data[i] == '\0') {
                     break;
                 }
-                //make char lowercase
-                
-                char_count[data[i] - 'a']++;
+                if (isalpha(data[i])){
+                    char dummy = tolower(data[i]);
+                    char_count[dummy - 'a']++;
+                }
             }
         }
         else if (ret == SBUFFER_FAILURE) {
@@ -47,6 +50,17 @@ void digest(sbuffer_t **buffer) {   //digest is 1
 
 void t_reader(sbuffer_t **buffer) {
     printf("t_reader\n");
+    FILE *f = fopen("input.txt", "r");
+    char *line = NULL;
+    size_t len = 0;
+    if (f == NULL) {
+        fprintf(stderr, "NI GOE!! file open gefaald..\n");
+        return;
+    }
+    while(getline(&line, &len, f) != -1){
+        sbuffer_insert(*buffer, line);
+    }
+    fclose(f);
 }
 
 
@@ -64,6 +78,7 @@ int main() {
     t = pthread_create(&digest_id, NULL, digest, &buffer);
 
     t_reader(&buffer);
+
 
 
     return 0;
