@@ -64,10 +64,16 @@ int sbuffer_remove(sbuffer_t * buffer, char * data, int who_am_i) {   //TODO: ch
     //check if both subtreads have read!!
 
     sbuffer_node_t *dummy;
-    if (buffer == NULL) return SBUFFER_FAILURE;
-    if (buffer->head == NULL) return SBUFFER_NO_DATA;
-
     pthread_mutex_lock(&(buffer->mutex));
+    if (buffer == NULL) {
+        pthread_mutex_unlock(&(buffer->mutex));
+        return SBUFFER_FAILURE;
+    } 
+    if (buffer->head == NULL){
+        pthread_mutex_unlock(&(buffer->mutex));
+        return SBUFFER_NO_DATA;
+    } 
+
     dummy = buffer->head;
 
     while(dummy->read_by[who_am_i] == 1) {
@@ -110,7 +116,10 @@ int sbuffer_insert(sbuffer_t * buffer, char * data) {
     // --- from here critical section I think.. ---
     pthread_mutex_lock(&(buffer->mutex));
     dummy = malloc(sizeof(sbuffer_node_t));
-    if (dummy == NULL) return SBUFFER_FAILURE;
+    if (dummy == NULL) {
+        pthread_mutex_unlock(&(buffer->mutex));
+        return SBUFFER_NO_DATA;
+    }
 
     strcpy(dummy->data, data);
     dummy->next = NULL;
