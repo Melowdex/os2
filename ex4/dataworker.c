@@ -6,6 +6,10 @@
 #include <unistd.h>
 #include <openssl/sha.h>
 #include <string.h>
+#include "dataworker.h"
+#include <signal.h>
+#include <sys/types.h>
+
 #define MESSAGE_MAX 512
 
 struct thread_info {    /* Used as argument to thread_start() */
@@ -88,24 +92,26 @@ void* digest(void* arg) {   //digest is 1
 
 void t_reader(sbuffer_t **buffer) {
     printf("t_reader\n");
-    FILE *f = fopen("input.txt", "r");
-    char *line = NULL;
-    size_t len = 0;
-    if (f == NULL) {
-        fprintf(stderr, "NI GOE!! file open gefaald..\n");
-        return;
-    }
-    while(getline(&line, &len, f) != -1){
-        sbuffer_insert(*buffer, line);
-    }
-    fclose(f);
+    close(pipefd_toDataWorker[1]);
+
+    int rres;
+
+    char line[MESSAGE_MAX];
+    do {
+        rres = read(pipefd_toDataWorker[0], line, MESSAGE_MAX);
+        printf("result: %d\n", rres);
+        if (rres > 0){  
+            sbuffer_insert(*buffer, line);
+            printf("inserted (t_reader): %s\n", line);
+        }
+        sleep(0.1);
+    } while (running == 1);
+    close(pipefd_toDataWorker[0]);
     sleep(1);
     done = 1;
 }
 
-
-
-int main() {
+int start_data_worker() {
 
     int s, t;
     pthread_t freq_count_id, digest_id;

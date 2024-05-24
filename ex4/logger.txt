@@ -1,0 +1,8 @@
+0) Logger started!
+1) Process created, pid: 21024
+2) Code is like humor. When you have to explain it, it’s bad.
+3) Process created, pid: 21030
+4) Any fool can write code that a computer can understand. Good programmers write code that humans can understand.
+5) Error occured on connection to peer
+6) Process created, pid: 21044
+7) There are two ways to write error-free programs; only the third one works.

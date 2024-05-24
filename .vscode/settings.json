@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.ejs": "html",
+        "config.h": "c",
+        "splist.h": "c",
+        "tcpsock.h": "c"
+    }
+}
